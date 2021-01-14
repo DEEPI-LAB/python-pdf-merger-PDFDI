@@ -11,9 +11,11 @@ import os
 import sys
 import webbrowser
 
+from PIL import Image
 from PyPDF2 import PdfFileMerger,PdfFileReader
 from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog,QTableWidgetItem,QMessageBox,QDialog,QPushButton
 from PyQt5 import uic, QtWidgets
+
 
 FROM_CLASS = uic.loadUiType("main.ui")[0]
 VER_CLASS = uic.loadUiType("version.ui")[0]
@@ -38,8 +40,9 @@ class PDFDI(QMainWindow,FROM_CLASS):
         header = self.table.horizontalHeader()       
         header.setSectionResizeMode(0,  QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(1,  QtWidgets.QHeaderView.Stretch)
-        header.setSectionResizeMode(2,  QtWidgets.QHeaderView.Stretch)
+        header.setSectionResizeMode(2,  QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(3,  QtWidgets.QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(4,  QtWidgets.QHeaderView.ResizeToContents)
     def versions(self):
         self.versionDialog = VERSION(self)
     def upperRow(self):
@@ -63,7 +66,7 @@ class PDFDI(QMainWindow,FROM_CLASS):
             self.initTable()
         except:pass
     def searchFile(self):
-        fname = QFileDialog.getOpenFileNames(self, 'PDF 파일을 선택해주세요.', './',"PDF files (*.pdf)")
+        fname = QFileDialog.getOpenFileNames(self, '파일을 선택해주세요.', './',"PDF file (*.pdf) ;; Image file (*.jpg;*.png;*.bmp)")
         if fname[0] == []: return
         else:
             self.fname = self.fname + fname[0]
@@ -79,8 +82,15 @@ class PDFDI(QMainWindow,FROM_CLASS):
     def initTable(self):
         self.table.setRowCount(len(self.fname))
         for i,file in enumerate(self.fname):
-            pdf_reader = PdfFileReader(file)
-            num = pdf_reader.numPages
+            try:
+                ['jpg','png'].index(file.split('.')[-1])
+                num = 1
+                self.table.setItem(i,4, QTableWidgetItem(file.split('.')[-1]))
+            except:
+                pdf_reader = PdfFileReader(file)
+                num = pdf_reader.numPages
+                self.table.setItem(i,4, QTableWidgetItem("pdf"))
+
             size = os.path.getsize(file)
             name = file.split('/')[-1]
             path = '/'.join(file.split('/')[:-1])
@@ -107,18 +117,45 @@ class PDFDI(QMainWindow,FROM_CLASS):
             self.sName = sName[0]
             self.PDF2PDFs()
     def PDF2PDFs(self):
+        imformat = ['jpg','png']
+        img2pdf = []
+        p = len(self.fname)
+        self.status.setText('파일 준비중')
         try:
             pdf_merger = PdfFileMerger(strict=False)
-            for file in self.fname:
+            for j,file in enumerate(self.fname):
+                self.progressBar.setValue(int((100*(j+1))/p)-1)
                 try:
-                    pdf_merger.append(file)
+                    try:
+                        self.status.setText('이미지 파일 병합중')
+                        a = ['jpg','png'].index(file.split('.')[-1])
+                        image1 = Image.open(file)
+                        im1 = image1.convert('RGB')
+                        cfile = file.replace('.'+imformat[a],'.pdf')
+                        img2pdf.append(cfile)
+                        im1.save(cfile)
+                        im1.close()
+                        pdf_merger.append(cfile)
+                    except: 
+                        self.status.setText('PDF 파일 병합중')
+                        pdf_merger.append(file)
                 except:
+                    self.status.setText('병합 실패')
                     self.popUp(0)
                     return
+            self.status.setText('최종 파일 생성중')
             pdf_merger.write(self.sName)
             pdf_merger.close()
+            for i in img2pdf:
+                os.remove(i)
+            self.status.setText('병합 성공')
+            self.progressBar.setValue(100)
             self.mergePopUp()
-        except : self.mergePopUp()
+        except : 
+            self.status.setText('병합 실패')
+            self.popUp(0)
+            for i in img2pdf:
+                os.remove(i)
     def popUp(self,idx):
         hmsg = ["PDF 병합 오류","PDF 병합 오류"]
         msg = ["PDF 병합이 실패했습니다. 파일을 확인해주세요.",
@@ -131,20 +168,19 @@ class PDFDI(QMainWindow,FROM_CLASS):
         msgbox.setText("PDF 병합을 성공했습니다.")
         botonyes = QPushButton("경로 열기")
         msgbox.addButton(botonyes, QMessageBox.YesRole)
-        # botonno = QPushButton("파일 열기")
-        # msgbox.addButton(botonno, QMessageBox.NoRole)
+        botonno = QPushButton("확인")
         msgbox.exec_()
         if msgbox.clickedButton() == botonyes:
             os.startfile( os.path.dirname(self.sName))
-        # elif msgbox.clickedButton() == botonno:
-        #     os.popen(self.sName)
+        elif msgbox.clickedButton() == botonno:
+            msgbox.deleteLater()
 class VERSION(QDialog,VER_CLASS):
     def __init__(self,perent):
-        super().__init__(perent)
+        super(VERSION,self).__init__(perent)
         self.setupUi(self)
+        self.show()
         self.version = 'PDF DI ver '+ '0.1.0'
         self.setWindowTitle(self.version)
-        self.show()
         self.but_close.clicked.connect(self.deleteLater)
         self.but_git.clicked.connect(lambda:webbrowser.open('https://github.com/DEEPI-LAB'))
         self.but_tis.clicked.connect(lambda:webbrowser.open('https://deep-eye.tistory.com/category/Program'))
