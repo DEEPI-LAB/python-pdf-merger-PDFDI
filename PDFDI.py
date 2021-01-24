@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PDF DI ver 0.1.0
+PDF DI ver 0.2.1
 @author: Deep.I Inc. @Jongwon Kim
 Revision date: 2021-01-11
 See here for more information :
@@ -25,7 +25,7 @@ class PDFDI(QMainWindow,FROM_CLASS):
         super().__init__()
         # UI load
         self.setupUi(self)
-        self.version = 'PDF DI ver '+ '0.1.0'
+        self.version = 'PDF DI ver '+ '0.2.1'
         self.setWindowTitle(self.version)
         # button
         self.but_add.clicked.connect(self.searchFile)
@@ -43,6 +43,8 @@ class PDFDI(QMainWindow,FROM_CLASS):
         header.setSectionResizeMode(2,  QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(3,  QtWidgets.QHeaderView.ResizeToContents)
         header.setSectionResizeMode(4,  QtWidgets.QHeaderView.ResizeToContents)
+        # FORMAT
+        self.format = ['jpg','png','jpeg','JPG','PNG','JPEG']
     def versions(self):
         self.versionDialog = VERSION(self)
     def upperRow(self):
@@ -66,7 +68,9 @@ class PDFDI(QMainWindow,FROM_CLASS):
             self.initTable()
         except:pass
     def searchFile(self):
-        fname = QFileDialog.getOpenFileNames(self, '파일을 선택해주세요.', './',"PDF file (*.pdf) ;; Image file (*.jpg;*.png;*.bmp)")
+        fname = QFileDialog.getOpenFileNames(self, 
+                                             '파일을 선택해주세요.', './',
+                                             "PDF file (*.pdf) ;; Image file (*.jpg;*.png;*.jpeg)")
         if fname[0] == []: return
         else:
             self.fname = self.fname + fname[0]
@@ -83,7 +87,7 @@ class PDFDI(QMainWindow,FROM_CLASS):
         self.table.setRowCount(len(self.fname))
         for i,file in enumerate(self.fname):
             try:
-                ['jpg','png'].index(file.split('.')[-1])
+                self.format.index(file.split('.')[-1])
                 num = 1
                 self.table.setItem(i,4, QTableWidgetItem(file.split('.')[-1]))
             except:
@@ -117,7 +121,7 @@ class PDFDI(QMainWindow,FROM_CLASS):
             self.sName = sName[0]
             self.PDF2PDFs()
     def PDF2PDFs(self):
-        imformat = ['jpg','png']
+        imformat = self.format
         img2pdf = []
         p = len(self.fname)
         self.status.setText('파일 준비중')
@@ -128,7 +132,7 @@ class PDFDI(QMainWindow,FROM_CLASS):
                 try:
                     try:
                         self.status.setText('이미지 파일 병합중')
-                        a = ['jpg','png'].index(file.split('.')[-1])
+                        a = self.format.index(file.split('.')[-1])
                         image1 = Image.open(file)
                         im1 = image1.convert('RGB')
                         cfile = file.replace('.'+imformat[a],'.pdf')
@@ -179,7 +183,7 @@ class VERSION(QDialog,VER_CLASS):
         super(VERSION,self).__init__(perent)
         self.setupUi(self)
         self.show()
-        self.version = 'PDF DI ver '+ '0.1.0'
+        self.version = 'PDF DI ver '+ '0.2.1'
         self.setWindowTitle(self.version)
         self.but_close.clicked.connect(self.deleteLater)
         self.but_git.clicked.connect(lambda:webbrowser.open('https://github.com/DEEPI-LAB'))

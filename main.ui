@@ -89,7 +89,7 @@
          </font>
         </property>
         <property name="text">
-         <string>PDF DI ver 0.0.1</string>
+         <string>PDF DI ver 0.2.0</string>
         </property>
        </widget>
       </item>
@@ -293,7 +293,7 @@
          <item>
           <widget class="QCheckBox" name="checkBox_4">
            <property name="text">
-            <string>CheckBox</string>
+            <string>DOCX</string>
            </property>
           </widget>
          </item>
